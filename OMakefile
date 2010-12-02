@@ -1,0 +1,22 @@
+USE_OCAMLFIND = true
+OCAMLPACKS[] = lwt.unix lwt.syntax lwt 
+
+NATIVE_ENABLED = true
+BYTE_ENABLED = true
+
+OCAMLFINDFLAGS += -syntax camlp4o
+OCAMLFLAGS  += -dtypes 
+
+FILES[] = lwt_queue
+LIB = lwtq
+
+OCAML_LIBS = lwtq
+
+.DEFAULT: \
+  $(OCamlLibrary $(LIB), $(FILES))  \
+  $(OCamlProgram test, test )
+
+.PHONY:  clean
+
+clean:
+   rm -f $(filter-proper-targets $(ls R, .)) *.s *.annot

@@ -1,0 +1,5 @@
+description = "Lwtq -- concurrent queue based on Lwt"
+version = "1.0"
+requires = "lwt.syntax"
+archive(byte) = "lwtq.cma"
+archive(native) = "lwtq.cmxa"
