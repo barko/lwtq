@@ -7,14 +7,15 @@ BYTE_ENABLED = true
 OCAMLFINDFLAGS += -syntax camlp4o
 OCAMLFLAGS  += -dtypes 
 
-FILES[] = lwt_queue
+FILES[] = lwt_queue lwt_sema
 LIB = lwtq
 
 OCAML_LIBS = lwtq
 
 .DEFAULT: \
   $(OCamlLibrary $(LIB), $(FILES))  \
-  $(OCamlProgram test, test )
+  $(OCamlProgram test_queue, test_queue ) \
+  $(OCamlProgram test_sema, test_sema )
 
 .PHONY:  clean
 
