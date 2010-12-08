@@ -36,7 +36,7 @@ open Lwt
 
 type t = {
   mutable value : int;
-  (* underlying queue *)
+  (* underlying value *)
 
   mutable max_value : int ;
   (* upper bound on the value *)
