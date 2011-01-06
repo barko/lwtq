@@ -7,7 +7,7 @@ BYTE_ENABLED = true
 OCAMLFINDFLAGS += -syntax camlp4o
 OCAMLFLAGS  += -dtypes 
 
-FILES[] = lwt_queue lwt_sema
+FILES[] = lwt_queue lwt_sema lwt_misc
 LIB = lwtq
 
 OCAML_LIBS = lwtq
