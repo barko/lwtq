@@ -34,14 +34,64 @@ open Lwt
 
 exception Timeout 
 
-let rec retry f attempts_remaining timeout =
+let rec retry f max_attempts timeout attempts_remaining last_exn_opt =
   Lwt.choose [
+
     Lwt_unix.sleep timeout >> return `Timeout; 
-    f attempts_remaining >>= fun result -> return (`Result result)
+
+    try_lwt
+      let attempt_count = 1 + max_attempts - attempts_remaining in
+      f attempt_count last_exn_opt >>= fun result -> return (`Result result)
+    with exn ->
+      return (`Exn exn)
+
   ] >>= function
+
     | `Timeout ->
+
       if attempts_remaining = 0 then
         fail Timeout
       else
-        retry f (attempts_remaining-1) timeout
-    | `Result result -> return result
+        retry f max_attempts timeout (attempts_remaining-1) last_exn_opt
+          
+    | `Result result -> return result 
+
+    | `Exn exn -> 
+
+      (* got an exception, so after sleeping a bit, retry; ideally, we
+         only sleep [timeout] minus the time it took [f] to fail, but
+         this would complicate the implementation *)
+
+      Lwt_unix.sleep timeout >>
+        retry f max_attempts timeout (attempts_remaining-1) (Some exn)
+
+let retry f attempts_remaining timeout =
+  retry f attempts_remaining timeout attempts_remaining None
+
+
+let sleeping threads = 
+  List.filter (
+    fun thr -> 
+      (Lwt.state thr) = Sleep
+  ) threads
+
+let max_parallel next_thread max =
+  let rec loop n threads = 
+    if n < max () then
+      let threads' = (next_thread ()) :: threads in
+      loop (n+1) threads'
+    else (
+      lwt chosen = Lwt.choose threads in
+      let threads' = (next_thread ()) :: (sleeping threads) in
+      loop (n+1) threads'
+    )
+  in
+  loop 0 []
+
+let qmap ~in_q ~out_q f =
+  lwt in_el = Lwt_queue.take in_q in
+  lwt out_el = f in_el in
+  Lwt_queue.put out_q out_el 
+
+let flow_qmap ~in_q ~out_q f max =
+  max_parallel (fun () -> qmap ~in_q ~out_q f) max
