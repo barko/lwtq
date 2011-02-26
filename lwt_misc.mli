@@ -62,3 +62,6 @@ val flow_qmap :
    runs at most [max ()] threads; each of these threads applies
    mapping [f ()] to elements of [in_q], and stores the results in the queue
    [out_q]. *)
+
+val array_iter_i_p : (int -> 'a -> unit Lwt.t) -> 'a array -> unit Lwt.t
+(* like Array.iteri, but for a function returning [unit Lwt.t] *)

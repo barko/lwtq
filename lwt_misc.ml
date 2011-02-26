@@ -95,3 +95,14 @@ let qmap ~in_q ~out_q f =
 
 let flow_qmap ~in_q ~out_q f max =
   max_parallel (fun () -> qmap ~in_q ~out_q f) max
+
+let rec array_iter_i_p f a i =
+  if i = Array.length a then
+    return ()
+  else
+    let t = f i a.(i) and lt = array_iter_i_p f a (i+1) in
+    lwt () = t in
+    lt
+
+let array_iter_i_p f a =
+  array_iter_i_p f a 0
