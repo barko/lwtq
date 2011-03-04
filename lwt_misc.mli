@@ -32,9 +32,8 @@
    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *)
 
-exception Timeout
-
-val retry : (int -> exn option -> 'a Lwt.t) -> int -> float -> 'a Lwt.t
+val retry : (unit -> 'a Lwt.t) -> int -> float -> 
+  [> `Ok of 'a | `Exn of exn | `Timeout ] list Lwt.t
 (* [retry f num_attempts tmo] calls [f] at most [num_attempts]
    times, waiting for no more than [tmo] between each attempt *)
 

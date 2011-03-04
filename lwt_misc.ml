@@ -32,16 +32,14 @@
 
 open Lwt
 
-exception Timeout 
-
-let rec retry f max_attempts timeout attempts_remaining last_exn_opt =
+let rec retry f timeout attempts_remaining outcome_accu =
+  let tick = Unix.gettimeofday () in
   Lwt.choose [
 
     Lwt_unix.sleep timeout >> return `Timeout; 
 
     try_lwt
-      let attempt_count = 1 + max_attempts - attempts_remaining in
-      f attempt_count last_exn_opt >>= fun result -> return (`Result result)
+      f () >>= fun result -> return (`Ok result)
     with exn ->
       return (`Exn exn)
 
@@ -49,24 +47,34 @@ let rec retry f max_attempts timeout attempts_remaining last_exn_opt =
 
     | `Timeout ->
 
-      if attempts_remaining = 0 then
-        fail Timeout
-      else
-        retry f max_attempts timeout (attempts_remaining-1) last_exn_opt
-          
-    | `Result result -> return result 
+        let outcome_accu' = `Timeout :: outcome_accu in
+        if attempts_remaining <= 0 then
+          return (List.rev outcome_accu')
+        else
+          retry f timeout (attempts_remaining-1) outcome_accu'
+            
+    | `Ok result -> 
+        let outcome_accu' = (`Ok result) :: outcome_accu in
+        return (List.rev outcome_accu')
 
     | `Exn exn -> 
 
-      (* got an exception, so after sleeping a bit, retry; ideally, we
-         only sleep [timeout] minus the time it took [f] to fail, but
-         this would complicate the implementation *)
+        let outcome_accu' = (`Exn exn) :: outcome_accu in
 
-      Lwt_unix.sleep timeout >>
-        retry f max_attempts timeout (attempts_remaining-1) (Some exn)
+        if attempts_remaining <= 0 then
+          return (List.rev outcome_accu')
+        else (
+          let tock = Unix.gettimeofday () in
+          let time_to_fail = tock -. tick in
+          let time_remaining = min 0. (timeout -. time_to_fail) in
+          
+          Lwt_unix.sleep time_remaining >>
+            retry f timeout (attempts_remaining-1) outcome_accu'
+        )
 
-let retry f attempts_remaining timeout =
-  retry f attempts_remaining timeout attempts_remaining None
+
+let retry f max_attempts timeout =
+  retry f timeout (max_attempts-1) []
 
 
 let sleeping threads = 
