@@ -49,24 +49,24 @@ let rec retry f timeout attempts_remaining outcome_accu =
 
         let outcome_accu' = `Timeout :: outcome_accu in
         if attempts_remaining <= 0 then
-          return (List.rev outcome_accu')
+          return outcome_accu'
         else
           retry f timeout (attempts_remaining-1) outcome_accu'
             
     | `Ok result -> 
         let outcome_accu' = (`Ok result) :: outcome_accu in
-        return (List.rev outcome_accu')
+        return outcome_accu'
 
     | `Exn exn -> 
 
         let outcome_accu' = (`Exn exn) :: outcome_accu in
 
         if attempts_remaining <= 0 then
-          return (List.rev outcome_accu')
+          return outcome_accu'
         else (
           let tock = Unix.gettimeofday () in
           let time_to_fail = tock -. tick in
-          let time_remaining = min 0. (timeout -. time_to_fail) in
+          let time_remaining = max 0. (timeout -. time_to_fail) in
           
           Lwt_unix.sleep time_remaining >>
             retry f timeout (attempts_remaining-1) outcome_accu'
@@ -114,3 +114,26 @@ let rec array_iter_i_p f a i =
 
 let array_iter_i_p f a =
   array_iter_i_p f a 0
+
+let rec batchify ~inq ~outq batch_size (accu_len, accu) =
+  if accu_len = batch_size then
+    lwt () = Lwt_queue.put outq (Some (List.rev accu)) in
+    batchify ~inq ~outq batch_size (0, [])
+  else (
+    assert (0 <= accu_len && accu_len < batch_size);
+    lwt e_opt = Lwt_queue.take inq in
+    match e_opt with 
+      | None -> 
+          (* terminate the iteration with a [None] *)
+          lwt () = Lwt_queue.put outq (Some (List.rev accu)) in
+          lwt () = Lwt_queue.put outq None in
+          return () 
+      | Some e ->
+          batchify ~inq ~outq batch_size (accu_len+1, e :: accu)
+  )
+
+let batchify ~inq ~outq batch_size =
+  if batch_size < 1 then
+    fail (Invalid_argument "batchify batch size is < 1")
+  else
+    batchify ~inq ~outq batch_size (0,[])

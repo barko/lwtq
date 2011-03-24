@@ -16,7 +16,8 @@ OCAML_LIBS = lwtq
   $(OCamlLibrary $(LIB), $(FILES))  \
   $(OCamlProgram test_queue, test_queue ) \
   $(OCamlProgram test_sema, test_sema ) \
-  $(OCamlProgram test_iter, test_iter ) 
+  $(OCamlProgram test_iter, test_iter ) \
+  $(OCamlProgram test_retry, test_retry ) 
 
 .PHONY:  clean
 

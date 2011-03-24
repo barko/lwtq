@@ -64,3 +64,14 @@ val flow_qmap :
 
 val array_iter_i_p : (int -> 'a -> unit Lwt.t) -> 'a array -> unit Lwt.t
 (* like Array.iteri, but for a function returning [unit Lwt.t] *)
+
+val batchify : 
+  inq:'a option Lwt_queue.t -> 
+  outq:'a list option Lwt_queue.t -> 
+  int -> 
+  unit Lwt.t
+(* [batchify ~inq ~outq size] takes elements from [inq] until [size]
+   have been taken, then puts a list of that size in [outq].  The
+   elements appear in [outq] in the same order as they did in [inq].
+   [batchify] returns when it sees a [None] element in [inq], after first
+   placing whatever elements have been collected from it in [outq] *)
