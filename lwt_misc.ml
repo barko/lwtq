@@ -115,10 +115,10 @@ let rec array_iter_i_p f a i =
 let array_iter_i_p f a =
   array_iter_i_p f a 0
 
-let rec batchify ~inq ~outq batch_size (accu_len, accu) =
+let rec batchify ~inq ~outq batch_size num_elements (accu_len, accu) =
   if accu_len = batch_size then
     lwt () = Lwt_queue.put outq (Some (List.rev accu)) in
-    batchify ~inq ~outq batch_size (0, [])
+    batchify ~inq ~outq batch_size num_elements (0, [])
   else (
     assert (0 <= accu_len && accu_len < batch_size);
     lwt e_opt = Lwt_queue.take inq in
@@ -127,13 +127,13 @@ let rec batchify ~inq ~outq batch_size (accu_len, accu) =
           (* terminate the iteration with a [None] *)
           lwt () = Lwt_queue.put outq (Some (List.rev accu)) in
           lwt () = Lwt_queue.put outq None in
-          return () 
+          return num_elements 
       | Some e ->
-          batchify ~inq ~outq batch_size (accu_len+1, e :: accu)
+          batchify ~inq ~outq batch_size (num_elements+1) (accu_len+1, e :: accu)
   )
 
 let batchify ~inq ~outq batch_size =
   if batch_size < 1 then
     fail (Invalid_argument "batchify batch size is < 1")
   else
-    batchify ~inq ~outq batch_size (0,[])
+    batchify ~inq ~outq batch_size 0 (0,[])
