@@ -1,6 +1,33 @@
 (** semaphore, based on Lwt *)
 
-(* Copyright (c) 2010, barko 00336ea19fcb53de187740c490f764f4 All
+type t 
+
+val num_waiters : t -> int
+  (* return the number of threads waiting  *)
+
+val value : t -> int
+  (* the current value of *)
+
+val set_max_value : t -> int -> unit
+  (* the maximum value of the semaphore.  Once [value] has reached
+     [max_value] calls to [add] will have no effect *)
+
+val get_max_value : t -> int
+  (* inspect the current maximum value *)
+
+val create : ?max_value:int -> unit -> t
+  (* create a new semaphore, optionally specifying its maximum value.
+     The initial value is the maximum value. *)
+
+val add : t -> unit
+  (* should [value < max_value], increase the value of the semaphore
+     by one *)
+
+val sub : t -> unit Lwt.t
+  (* decrease the value by one *)
+
+
+(* Copyright (c) 2011, barko 00336ea19fcb53de187740c490f764f4 All
    rights reserved.
 
    Redistribution and use in source and binary forms, with or without
@@ -31,30 +58,4 @@
    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *)
-
-type t 
-
-val num_waiters : t -> int
-  (* return the number of threads waiting  *)
-
-val value : t -> int
-  (* the current value of *)
-
-val set_max_value : t -> int -> unit
-  (* the maximum value of the semaphore.  Once [value] has reached
-     [max_value] calls to [add] will have no effect *)
-
-val get_max_value : t -> int
-  (* inspect the current maximum value *)
-
-val create : ?max_value:int -> unit -> t
-  (* create a new semaphore, optionally specifying its maximum value.
-     The initial value is the maximum value. *)
-
-val add : t -> unit
-  (* should [value < max_value], increase the value of the semaphore
-     by one *)
-
-val sub : t -> unit Lwt.t
-  (* decrease the value by one *)
 
